@@ -22,7 +22,7 @@ locals {
 
 # Pub/Sub Topic for signature messages
 module "pubsub_topic" {
-  source = "git::https://github.com/nirvanadao/tf-modules.git//modules/pubsub-topic"
+  source = "../pubsub-topic"
 
   project_id = var.project_id
   name       = var.pubsub_topic_name
@@ -47,7 +47,7 @@ resource "google_storage_bucket" "checkpoint_bucket" {
 
 # Cloud Run Service - Processes tasks and publishes to Pub/Sub
 module "worker_service" {
-  source = "git::https://github.com/nirvanadao/tf-modules.git//modules/cloud-run-service"
+  source = "../cloud-run-service"
 
   project_id       = var.project_id
   region           = var.region
@@ -124,7 +124,7 @@ resource "google_cloud_run_v2_service_iam_member" "tasks_invoker" {
 
 # Cloud Run Job - Scheduler that fans out tasks
 module "scheduler_job" {
-  source = "git::https://github.com/nirvanadao/tf-modules.git//modules/cloud-run-job"
+  source = "../cloud-run-job"
 
   project_id       = var.project_id
   region           = var.region

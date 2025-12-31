@@ -134,7 +134,7 @@ resource "google_monitoring_alert_policy" "errors_critical" {
         | metric 'run.googleapis.com/request_count'
         | filter (resource.service_name == '${var.service_name}') && (resource.location == '${var.region}')
         | align rate(1m)
-        | group_by [resource.service_name], [ratio: sum(if(metric.response_code_class == '5xx', val(), 0)) / sum(val())]
+        | group_by [resource.service_name], [ratio: sum(if(metric.response_code_class == '5xx', val(), 0.0)) / sum(val())]
         | condition ratio > ${var.error_rate_critical}
       EOT
     }
@@ -172,7 +172,7 @@ resource "google_monitoring_alert_policy" "errors_warning" {
         | metric 'run.googleapis.com/request_count'
         | filter (resource.service_name == '${var.service_name}') && (resource.location == '${var.region}')
         | align rate(1m)
-        | group_by [resource.service_name], [ratio: sum(if(metric.response_code_class == '5xx', val(), 0)) / sum(val())]
+        | group_by [resource.service_name], [ratio: sum(if(metric.response_code_class == '5xx', val(), 0.0)) / sum(val())]
         | condition ratio > ${var.error_rate_warning}
       EOT
     }

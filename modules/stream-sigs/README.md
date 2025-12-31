@@ -91,6 +91,45 @@ module "stream_sigs_mainnet" {
     environment = "production"
     chain       = "mainnet-beta"
   }
+
+  # Monitoring
+  critical_notification_channels = [google_monitoring_notification_channel.pagerduty.id]
+  warning_notification_channels  = [google_monitoring_notification_channel.slack.id]
+}
+```
+
+## Monitoring
+
+The module includes built-in monitoring with two-tier alerting (Critical/Warning):
+
+| Alert | Severity | Default Threshold | Description |
+|-------|----------|-------------------|-------------|
+| Worker Errors Critical | CRITICAL | > 10 errors/min | Worker service 5xx errors |
+| Worker Errors Warning | WARNING | > 1 error/min | Early warning for errors |
+| Pipeline Stalled | CRITICAL | No traffic 120s | No requests to worker |
+| Scheduler Failed | CRITICAL | Any failure | Scheduler job execution failed |
+| Queue Backlog Critical | CRITICAL | > 2000 tasks | Queue severely backed up |
+| Queue Backlog Warning | WARNING | > 500 tasks | Queue starting to back up |
+
+### Monitoring Configuration
+
+```hcl
+module "stream_sigs" {
+  # ... required variables ...
+
+  # Notification channels (two-tier)
+  critical_notification_channels = [pagerduty_channel_id]
+  warning_notification_channels  = [slack_channel_id]
+
+  # Custom thresholds
+  worker_error_threshold          = 5    # Warning at 5 errors/min
+  worker_error_critical_threshold = 20   # Critical at 20 errors/min
+  heartbeat_missing_seconds       = 180  # Alert after 3 min no traffic
+  queue_depth_warning_threshold   = 1000
+  queue_depth_critical_threshold  = 5000
+
+  # Disable specific alerts
+  enable_heartbeat_alert = false  # Disable if pipeline is paused often
 }
 ```
 
@@ -141,10 +180,12 @@ See `variables.tf` for full list with defaults.
 | [google_cloud_run_v2_service_iam_member.tasks_invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam_member) | resource |
 | [google_cloud_tasks_queue.queue](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue) | resource |
 | [google_cloud_tasks_queue_iam_member.scheduler_enqueuer](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_tasks_queue_iam_member) | resource |
-| [google_monitoring_alert_policy.queue_depth](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
-| [google_monitoring_alert_policy.scheduler_failures](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
-| [google_monitoring_alert_policy.worker_failures](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
-| [google_monitoring_alert_policy.worker_heartbeat](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.heartbeat](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.queue_depth_critical](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.queue_depth_warning](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.scheduler_failure](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.worker_errors_critical](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
+| [google_monitoring_alert_policy.worker_errors_warning](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/monitoring_alert_policy) | resource |
 | [google_pubsub_topic_iam_member.worker_publisher](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_topic_iam_member) | resource |
 | [google_service_account.tasks_invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account) | resource |
 | [google_service_account_iam_member.scheduler_impersonation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
@@ -159,7 +200,6 @@ See `variables.tf` for full list with defaults.
 | <a name="input_gcs_checkpoint_bucket"></a> [gcs\_checkpoint\_bucket](#input\_gcs\_checkpoint\_bucket) | GCS bucket for checkpoint storage | `string` | n/a | yes |
 | <a name="input_gcs_checkpoint_file_path"></a> [gcs\_checkpoint\_file\_path](#input\_gcs\_checkpoint\_file\_path) | GCS file path for checkpoint | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Base name for resources (e.g., 'stream-sigs-mainnet') | `string` | n/a | yes |
-| <a name="input_notification_channels"></a> [notification\_channels](#input\_notification\_channels) | List of Notification Channel IDs | `list(string)` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | GCP project ID | `string` | n/a | yes |
 | <a name="input_pubsub_topic_name"></a> [pubsub\_topic\_name](#input\_pubsub\_topic\_name) | Name for the Pub/Sub topic | `string` | n/a | yes |
 | <a name="input_redis_url"></a> [redis\_url](#input\_redis\_url) | Redis URL for deduplication cache | `string` | n/a | yes |
@@ -168,8 +208,17 @@ See `variables.tf` for full list with defaults.
 | <a name="input_solana_account_address"></a> [solana\_account\_address](#input\_solana\_account\_address) | Solana account address to stream signatures for | `string` | n/a | yes |
 | <a name="input_solana_rpc_urls"></a> [solana\_rpc\_urls](#input\_solana\_rpc\_urls) | Comma-separated list of Solana RPC URLs | `string` | n/a | yes |
 | <a name="input_vpc_connector_id"></a> [vpc\_connector\_id](#input\_vpc\_connector\_id) | VPC Access Connector ID from foundation module | `string` | n/a | yes |
+| <a name="input_alert_duration_seconds"></a> [alert\_duration\_seconds](#input\_alert\_duration\_seconds) | How long a condition must persist before alerting | `number` | `60` | no |
+| <a name="input_critical_notification_channels"></a> [critical\_notification\_channels](#input\_critical\_notification\_channels) | Notification channels for CRITICAL alerts (e.g., PagerDuty) | `list(string)` | `[]` | no |
+| <a name="input_enable_heartbeat_alert"></a> [enable\_heartbeat\_alert](#input\_enable\_heartbeat\_alert) | Enable pipeline heartbeat (no traffic) alerts | `bool` | `true` | no |
+| <a name="input_enable_queue_depth_alert"></a> [enable\_queue\_depth\_alert](#input\_enable\_queue\_depth\_alert) | Enable queue backlog depth alerts | `bool` | `true` | no |
+| <a name="input_enable_scheduler_failure_alert"></a> [enable\_scheduler\_failure\_alert](#input\_enable\_scheduler\_failure\_alert) | Enable scheduler job failure alerts | `bool` | `true` | no |
+| <a name="input_enable_worker_failure_alert"></a> [enable\_worker\_failure\_alert](#input\_enable\_worker\_failure\_alert) | Enable worker 5xx error alerts | `bool` | `true` | no |
+| <a name="input_heartbeat_missing_seconds"></a> [heartbeat\_missing\_seconds](#input\_heartbeat\_missing\_seconds) | Seconds without traffic before alerting pipeline stalled | `number` | `120` | no |
 | <a name="input_job_lock_ttl_seconds"></a> [job\_lock\_ttl\_seconds](#input\_job\_lock\_ttl\_seconds) | TTL for job-level mutex lock in seconds (prevents overlapping workers) | `number` | `15` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Labels to apply to resources | `map(string)` | `{}` | no |
+| <a name="input_queue_depth_critical_threshold"></a> [queue\_depth\_critical\_threshold](#input\_queue\_depth\_critical\_threshold) | Queue depth to trigger critical alert | `number` | `2000` | no |
+| <a name="input_queue_depth_warning_threshold"></a> [queue\_depth\_warning\_threshold](#input\_queue\_depth\_warning\_threshold) | Queue depth to trigger warning alert | `number` | `500` | no |
 | <a name="input_queue_max_attempts"></a> [queue\_max\_attempts](#input\_queue\_max\_attempts) | Maximum task retry attempts | `number` | `3` | no |
 | <a name="input_queue_max_backoff_seconds"></a> [queue\_max\_backoff\_seconds](#input\_queue\_max\_backoff\_seconds) | Maximum backoff between retries | `number` | `600` | no |
 | <a name="input_queue_max_concurrent_dispatches"></a> [queue\_max\_concurrent\_dispatches](#input\_queue\_max\_concurrent\_dispatches) | Maximum concurrent task dispatches | `number` | `100` | no |
@@ -190,8 +239,11 @@ See `variables.tf` for full list with defaults.
 | <a name="input_solana_commitment"></a> [solana\_commitment](#input\_solana\_commitment) | Solana commitment level | `string` | `"finalized"` | no |
 | <a name="input_task_interval_seconds"></a> [task\_interval\_seconds](#input\_task\_interval\_seconds) | Interval between worker tasks (e.g., 5 for every 5 seconds) | `number` | `5` | no |
 | <a name="input_task_start_offset_seconds"></a> [task\_start\_offset\_seconds](#input\_task\_start\_offset\_seconds) | Offset for first task (0 = immediate) | `number` | `0` | no |
+| <a name="input_warning_notification_channels"></a> [warning\_notification\_channels](#input\_warning\_notification\_channels) | Notification channels for WARNING alerts (e.g., Slack) | `list(string)` | `[]` | no |
 | <a name="input_worker_cpu"></a> [worker\_cpu](#input\_worker\_cpu) | CPU allocation for worker service | `string` | `"1"` | no |
 | <a name="input_worker_environment_variables"></a> [worker\_environment\_variables](#input\_worker\_environment\_variables) | Additional environment variables for worker | `map(string)` | `{}` | no |
+| <a name="input_worker_error_critical_threshold"></a> [worker\_error\_critical\_threshold](#input\_worker\_error\_critical\_threshold) | Number of 5xx errors per minute to trigger critical | `number` | `10` | no |
+| <a name="input_worker_error_threshold"></a> [worker\_error\_threshold](#input\_worker\_error\_threshold) | Number of 5xx errors per minute to trigger warning | `number` | `1` | no |
 | <a name="input_worker_image"></a> [worker\_image](#input\_worker\_image) | Docker image URL for stream-sigs-to-pubsub worker | `string` | `"us-docker.pkg.dev/roughmagic-shared/infra/stream-sigs-to-pubsub:latest"` | no |
 | <a name="input_worker_max_instances"></a> [worker\_max\_instances](#input\_worker\_max\_instances) | Maximum number of worker instances | `number` | `10` | no |
 | <a name="input_worker_memory"></a> [worker\_memory](#input\_worker\_memory) | Memory allocation for worker service | `string` | `"512Mi"` | no |
@@ -205,17 +257,23 @@ See `variables.tf` for full list with defaults.
 |------|-------------|
 | <a name="output_checkpoint_bucket_name"></a> [checkpoint\_bucket\_name](#output\_checkpoint\_bucket\_name) | Name of the GCS checkpoint bucket |
 | <a name="output_checkpoint_bucket_url"></a> [checkpoint\_bucket\_url](#output\_checkpoint\_bucket\_url) | URL of the GCS checkpoint bucket |
+| <a name="output_heartbeat_alert_id"></a> [heartbeat\_alert\_id](#output\_heartbeat\_alert\_id) | ID of the pipeline heartbeat alert policy |
 | <a name="output_pubsub_monitoring_subscription_name"></a> [pubsub\_monitoring\_subscription\_name](#output\_pubsub\_monitoring\_subscription\_name) | Name of the monitoring subscription |
 | <a name="output_pubsub_topic_id"></a> [pubsub\_topic\_id](#output\_pubsub\_topic\_id) | ID of the Pub/Sub topic |
 | <a name="output_pubsub_topic_name"></a> [pubsub\_topic\_name](#output\_pubsub\_topic\_name) | Name of the Pub/Sub topic |
+| <a name="output_queue_depth_critical_alert_id"></a> [queue\_depth\_critical\_alert\_id](#output\_queue\_depth\_critical\_alert\_id) | ID of the queue depth critical alert policy |
+| <a name="output_queue_depth_warning_alert_id"></a> [queue\_depth\_warning\_alert\_id](#output\_queue\_depth\_warning\_alert\_id) | ID of the queue depth warning alert policy |
 | <a name="output_queue_id"></a> [queue\_id](#output\_queue\_id) | ID of the Cloud Tasks queue |
 | <a name="output_queue_name"></a> [queue\_name](#output\_queue\_name) | Name of the Cloud Tasks queue |
+| <a name="output_scheduler_failure_alert_id"></a> [scheduler\_failure\_alert\_id](#output\_scheduler\_failure\_alert\_id) | ID of the scheduler failure alert policy |
 | <a name="output_scheduler_job_id"></a> [scheduler\_job\_id](#output\_scheduler\_job\_id) | ID of the scheduler Cloud Run job |
 | <a name="output_scheduler_job_name"></a> [scheduler\_job\_name](#output\_scheduler\_job\_name) | Name of the scheduler Cloud Run job |
 | <a name="output_scheduler_name"></a> [scheduler\_name](#output\_scheduler\_name) | Name of the Cloud Scheduler job |
 | <a name="output_scheduler_service_account_email"></a> [scheduler\_service\_account\_email](#output\_scheduler\_service\_account\_email) | Email of the scheduler job service account |
 | <a name="output_tasks_invoker_email"></a> [tasks\_invoker\_email](#output\_tasks\_invoker\_email) | Email of the Cloud Tasks invoker service account |
 | <a name="output_tasks_invoker_id"></a> [tasks\_invoker\_id](#output\_tasks\_invoker\_id) | ID of the Cloud Tasks invoker service account |
+| <a name="output_worker_errors_critical_alert_id"></a> [worker\_errors\_critical\_alert\_id](#output\_worker\_errors\_critical\_alert\_id) | ID of the worker errors critical alert policy |
+| <a name="output_worker_errors_warning_alert_id"></a> [worker\_errors\_warning\_alert\_id](#output\_worker\_errors\_warning\_alert\_id) | ID of the worker errors warning alert policy |
 | <a name="output_worker_service_account_email"></a> [worker\_service\_account\_email](#output\_worker\_service\_account\_email) | Email of the worker service account |
 | <a name="output_worker_service_name"></a> [worker\_service\_name](#output\_worker\_service\_name) | Name of the worker Cloud Run service |
 | <a name="output_worker_service_url"></a> [worker\_service\_url](#output\_worker\_service\_url) | URL of the worker Cloud Run service |

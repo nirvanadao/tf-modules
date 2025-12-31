@@ -83,3 +83,34 @@ output "checkpoint_bucket_url" {
   description = "URL of the GCS checkpoint bucket"
   value       = google_storage_bucket.checkpoint_bucket.url
 }
+
+# Monitoring outputs
+output "worker_errors_critical_alert_id" {
+  description = "ID of the worker errors critical alert policy"
+  value       = var.enable_worker_failure_alert ? google_monitoring_alert_policy.worker_errors_critical[0].name : null
+}
+
+output "worker_errors_warning_alert_id" {
+  description = "ID of the worker errors warning alert policy"
+  value       = var.enable_worker_failure_alert ? google_monitoring_alert_policy.worker_errors_warning[0].name : null
+}
+
+output "heartbeat_alert_id" {
+  description = "ID of the pipeline heartbeat alert policy"
+  value       = var.enable_heartbeat_alert ? google_monitoring_alert_policy.heartbeat[0].name : null
+}
+
+output "scheduler_failure_alert_id" {
+  description = "ID of the scheduler failure alert policy"
+  value       = var.enable_scheduler_failure_alert ? google_monitoring_alert_policy.scheduler_failure[0].name : null
+}
+
+output "queue_depth_critical_alert_id" {
+  description = "ID of the queue depth critical alert policy"
+  value       = var.enable_queue_depth_alert ? google_monitoring_alert_policy.queue_depth_critical[0].name : null
+}
+
+output "queue_depth_warning_alert_id" {
+  description = "ID of the queue depth warning alert policy"
+  value       = var.enable_queue_depth_alert ? google_monitoring_alert_policy.queue_depth_warning[0].name : null
+}

@@ -248,3 +248,83 @@ variable "labels" {
   default     = {}
 }
 
+# ==============================================================================
+# Monitoring Configuration
+# ==============================================================================
+
+variable "critical_notification_channels" {
+  description = "Notification channels for CRITICAL alerts (e.g., PagerDuty)"
+  type        = list(string)
+  default     = []
+}
+
+variable "warning_notification_channels" {
+  description = "Notification channels for WARNING alerts (e.g., Slack)"
+  type        = list(string)
+  default     = []
+}
+
+# --- Alert Toggles ---
+
+variable "enable_worker_failure_alert" {
+  description = "Enable worker 5xx error alerts"
+  type        = bool
+  default     = true
+}
+
+variable "enable_heartbeat_alert" {
+  description = "Enable pipeline heartbeat (no traffic) alerts"
+  type        = bool
+  default     = true
+}
+
+variable "enable_scheduler_failure_alert" {
+  description = "Enable scheduler job failure alerts"
+  type        = bool
+  default     = true
+}
+
+variable "enable_queue_depth_alert" {
+  description = "Enable queue backlog depth alerts"
+  type        = bool
+  default     = true
+}
+
+# --- Thresholds ---
+
+variable "worker_error_threshold" {
+  description = "Number of 5xx errors per minute to trigger warning"
+  type        = number
+  default     = 1
+}
+
+variable "worker_error_critical_threshold" {
+  description = "Number of 5xx errors per minute to trigger critical"
+  type        = number
+  default     = 10
+}
+
+variable "heartbeat_missing_seconds" {
+  description = "Seconds without traffic before alerting pipeline stalled"
+  type        = number
+  default     = 120
+}
+
+variable "queue_depth_warning_threshold" {
+  description = "Queue depth to trigger warning alert"
+  type        = number
+  default     = 500
+}
+
+variable "queue_depth_critical_threshold" {
+  description = "Queue depth to trigger critical alert"
+  type        = number
+  default     = 2000
+}
+
+variable "alert_duration_seconds" {
+  description = "How long a condition must persist before alerting"
+  type        = number
+  default     = 60
+}
+

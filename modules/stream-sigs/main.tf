@@ -90,7 +90,7 @@ module "worker_service" {
 resource "google_cloud_tasks_queue" "queue" {
   project  = var.project_id
   location = var.region
-  name     = "${var.name}-queue"
+  name     = "${var.name}-q"
 
   rate_limits {
     max_concurrent_dispatches = var.queue_max_concurrent_dispatches

@@ -105,7 +105,7 @@ resource "google_monitoring_alert_policy" "errors_critical" {
   count = var.enable_error_alerts ? 1 : 0
 
   project      = var.project_id
-  display_name = "[CRITICAL] ${var.service_name} - Error Rate > ${var.error_rate_critical * 100}%"
+  display_name = "[CRITICAL] ${var.service_name} - Error Rate > ${format("%.1f", var.error_rate_critical * 100)}%"
   combiner     = "OR"
   enabled      = true
 
@@ -117,7 +117,7 @@ resource "google_monitoring_alert_policy" "errors_critical" {
     content   = <<-EOT
       ## Critical: High Error Rate
       **Service:** ${var.service_name}
-      **Threshold:** 5xx > ${var.error_rate_critical * 100}%
+      **Threshold:** 5xx > ${format("%.1f", var.error_rate_critical * 100)}%
 
       ### Playbook
       1. Check [Error Reporting](${local.errors_url})
@@ -126,7 +126,7 @@ resource "google_monitoring_alert_policy" "errors_critical" {
   }
 
   conditions {
-    display_name = "5xx Error Rate > ${var.error_rate_critical * 100}%"
+    display_name = "5xx Error Rate > ${format("%.1f", var.error_rate_critical * 100)}%"
     condition_monitoring_query_language {
       duration = "${var.alert_duration_seconds}s"
       query = <<-EOT
@@ -145,7 +145,7 @@ resource "google_monitoring_alert_policy" "errors_warning" {
   count = var.enable_error_alerts ? 1 : 0
 
   project      = var.project_id
-  display_name = "[WARNING] ${var.service_name} - Error Rate > ${var.error_rate_warning * 100}%"
+  display_name = "[WARNING] ${var.service_name} - Error Rate > ${format("%.1f", var.error_rate_warning * 100)}%"
   combiner     = "OR"
   enabled      = true
 
@@ -157,14 +157,14 @@ resource "google_monitoring_alert_policy" "errors_warning" {
     content   = <<-EOT
       ## Warning: Elevated Error Rate
       **Service:** ${var.service_name}
-      **Threshold:** 5xx > ${var.error_rate_warning * 100}%
+      **Threshold:** 5xx > ${format("%.1f", var.error_rate_warning * 100)}%
       
       Review logs for potential issues.
     EOT
   }
 
   conditions {
-    display_name = "5xx Error Rate > ${var.error_rate_warning * 100}%"
+    display_name = "5xx Error Rate > ${format("%.1f", var.error_rate_warning * 100)}%"
     condition_monitoring_query_language {
       duration = "${var.alert_duration_seconds}s"
       query = <<-EOT

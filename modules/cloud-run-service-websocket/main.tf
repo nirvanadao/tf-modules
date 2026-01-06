@@ -149,12 +149,10 @@ resource "google_compute_backend_service" "ws_backend" {
   name        = "${var.service_name}-backend"
   protocol    = "HTTP" # LB talks HTTP to Cloud Run (Cloud Run handles upgrade)
   port_name   = "http"
-  timeout_sec = 3600 # CRITICAL: Match Cloud Run timeout (60m)
   enable_cdn  = false
 
   # CRITICAL: Sticky sessions help WebSocket upgrades succeed consistently
   session_affinity   = "GENERATED_COOKIE"
-  locality_lb_policy = "RING_HASH"
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg.id

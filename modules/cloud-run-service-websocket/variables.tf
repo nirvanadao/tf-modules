@@ -39,3 +39,9 @@ variable "domain" {
   description = "Domain name for the SSL certificate (e.g., ws.example.com)"
   type        = string
 }
+
+variable "service_account_roles" {
+  description = "Additional IAM roles to grant to the service account (telemetry roles are always included)"
+  type        = list(string)
+  default     = []
+}

@@ -202,7 +202,8 @@ resource "google_monitoring_alert_policy" "delivery_latency" {
 
       duration        = "300s"
       comparison      = "COMPARISON_GT"
-      threshold_value = var.delivery_latency_threshold_ms
+      # Metric is in microseconds, convert from ms
+      threshold_value = var.delivery_latency_threshold_ms * 1000
 
       aggregations {
         alignment_period     = "60s"

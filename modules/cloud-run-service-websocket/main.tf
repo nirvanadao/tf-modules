@@ -128,23 +128,10 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
 # 3. GLOBAL LOAD BALANCER (HTTPS)
 # ==============================================================================
 
-# A. Static Global IP
-resource "google_compute_global_address" "lb_ip" {
-  project = var.project_id
-  name    = "${var.service_name}-ip"
-}
+# NOTE: Static IP and SSL Certificate are managed externally via ip-and-cert module
+# and passed in as var.lb_ip_address and var.ssl_certificate_id
 
-# B. Managed SSL Certificate
-resource "google_compute_managed_ssl_certificate" "lb_cert" {
-  project = var.project_id
-  name    = "${var.service_name}-cert"
-
-  managed {
-    domains = [var.domain]
-  }
-}
-
-# C. Serverless Network Endpoint Group (The bridge between LB and Cloud Run)
+# A. Serverless Network Endpoint Group (The bridge between LB and Cloud Run)
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   project               = var.project_id
   name                  = "${var.service_name}-neg"
@@ -156,7 +143,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   }
 }
 
-# D. Backend Service (The Logic)
+# B. Backend Service (The Logic)
 resource "google_compute_backend_service" "ws_backend" {
   project     = var.project_id
   name        = "${var.service_name}-backend"
@@ -174,26 +161,26 @@ resource "google_compute_backend_service" "ws_backend" {
   }
 }
 
-# E. URL Map (Routing)
+# C. URL Map (Routing)
 resource "google_compute_url_map" "default" {
   project         = var.project_id
   name            = "${var.service_name}-url-map"
   default_service = google_compute_backend_service.ws_backend.id
 }
 
-# F. HTTPS Proxy
+# D. HTTPS Proxy
 resource "google_compute_target_https_proxy" "default" {
   project          = var.project_id
   name             = "${var.service_name}-https-proxy"
   url_map          = google_compute_url_map.default.id
-  ssl_certificates = [google_compute_managed_ssl_certificate.lb_cert.id]
+  ssl_certificates = [var.ssl_certificate_id]
 }
 
-# G. Forwarding Rule (The Entry Point)
+# E. Forwarding Rule (The Entry Point)
 resource "google_compute_global_forwarding_rule" "default" {
   project    = var.project_id
   name       = "${var.service_name}-forwarding-rule"
   target     = google_compute_target_https_proxy.default.id
   port_range = "443"
-  ip_address = google_compute_global_address.lb_ip.address
+  ip_address = var.lb_ip_address
 }

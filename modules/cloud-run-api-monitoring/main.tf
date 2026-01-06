@@ -49,7 +49,8 @@ resource "google_monitoring_alert_policy" "latency_critical" {
       filter = "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"${var.service_name}\" AND resource.labels.location = \"${var.region}\" AND metric.type = \"run.googleapis.com/request_latencies\""
       duration        = "${var.alert_duration_seconds}s"
       comparison      = "COMPARISON_GT"
-      threshold_value = var.latency_critical_ms
+      # Metric is in microseconds, convert from ms
+      threshold_value = var.latency_critical_ms * 1000
       aggregations {
         alignment_period     = "60s"
         per_series_aligner   = "ALIGN_DELTA"
@@ -87,7 +88,8 @@ resource "google_monitoring_alert_policy" "latency_warning" {
       filter = "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"${var.service_name}\" AND resource.labels.location = \"${var.region}\" AND metric.type = \"run.googleapis.com/request_latencies\""
       duration        = "${var.alert_duration_seconds}s"
       comparison      = "COMPARISON_GT"
-      threshold_value = var.latency_warning_ms
+      # Metric is in microseconds, convert from ms
+      threshold_value = var.latency_warning_ms * 1000
       aggregations {
         alignment_period     = "60s"
         per_series_aligner   = "ALIGN_DELTA"

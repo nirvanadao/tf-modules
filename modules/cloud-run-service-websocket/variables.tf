@@ -45,3 +45,13 @@ variable "service_account_roles" {
   type        = list(string)
   default     = []
 }
+
+variable "lb_ip_address" {
+  description = "Static IP address for the load balancer (from ip-and-cert module)"
+  type        = string
+}
+
+variable "ssl_certificate_id" {
+  description = "SSL certificate ID for HTTPS (from ip-and-cert module)"
+  type        = string
+}

@@ -15,7 +15,7 @@ output "service_account_email" {
 
 output "load_balancer_ip" {
   description = "Static IP address of the load balancer"
-  value       = google_compute_global_address.lb_ip.address
+  value       = var.lb_ip_address
 }
 
 output "load_balancer_url" {

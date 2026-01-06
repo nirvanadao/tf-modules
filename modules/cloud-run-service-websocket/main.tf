@@ -8,6 +8,26 @@ resource "google_service_account" "service" {
   display_name = "Service account for ${var.service_name}"
 }
 
+locals {
+  # Default roles required for telemetry (Cloud Trace, Monitoring)
+  default_roles = [
+    "roles/cloudtrace.agent",
+    "roles/monitoring.metricWriter",
+  ]
+
+  # Merge default roles with provided roles, removing duplicates
+  all_roles = distinct(concat(local.default_roles, var.service_account_roles))
+}
+
+# Grant IAM roles to the service account
+resource "google_project_iam_member" "service_account_roles" {
+  for_each = toset(local.all_roles)
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.service.email}"
+}
+
 # ==============================================================================
 # 2. CLOUD RUN SERVICE (WebSocket Optimized)
 # ==============================================================================

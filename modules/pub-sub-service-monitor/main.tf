@@ -80,7 +80,7 @@ resource "google_monitoring_alert_policy" "dlq_breach" {
 }
 
 # ---------------------------------------------------------
-# 2. WARNING: Push Failures (Non-200 Responses)
+# 2. WARNING: Push Failures (Non-ACK Responses)
 # ---------------------------------------------------------
 resource "google_monitoring_alert_policy" "push_failures" {
   project      = var.project_id
@@ -91,7 +91,7 @@ resource "google_monitoring_alert_policy" "push_failures" {
   conditions {
     display_name = "Push Error Count > ${var.push_error_threshold} / min"
     condition_threshold {
-      filter = "resource.type = \"pubsub_subscription\" AND resource.labels.subscription_id = \"${var.main_push_subscription_id}\" AND metric.type = \"pubsub.googleapis.com/subscription/push_request_count\" AND metric.labels.response_class != \"success\""
+      filter = "resource.type = \"pubsub_subscription\" AND resource.labels.subscription_id = \"${var.main_push_subscription_id}\" AND metric.type = \"pubsub.googleapis.com/subscription/push_request_count\" AND metric.labels.response_class != \"ack\""
 
       duration        = "300s"
       comparison      = "COMPARISON_GT"
@@ -102,6 +102,10 @@ resource "google_monitoring_alert_policy" "push_failures" {
         per_series_aligner = "ALIGN_SUM" 
       }
     }
+  }
+
+  alert_strategy {
+    auto_close = "604800s" # 7 days
   }
 
   # USE WARNING CHANNELS (Slack/Email)
@@ -157,6 +161,10 @@ resource "google_monitoring_alert_policy" "staleness" {
     }
   }
 
+  alert_strategy {
+    auto_close = "604800s" # 7 days
+  }
+
   # USE WARNING CHANNELS (Slack/Email)
   notification_channels = var.warning_notification_channels
   user_labels = {
@@ -207,10 +215,14 @@ resource "google_monitoring_alert_policy" "delivery_latency" {
 
       aggregations {
         alignment_period     = "60s"
-        per_series_aligner   = "ALIGN_DELTA"
-        cross_series_reducer = "REDUCE_PERCENTILE_95"
+        per_series_aligner   = "ALIGN_PERCENTILE_95"
+        cross_series_reducer = "REDUCE_MAX"
       }
     }
+  }
+
+  alert_strategy {
+    auto_close = "604800s" # 7 days
   }
 
   # USE WARNING CHANNELS (Slack/Email) - Info usually goes to the same place as warning

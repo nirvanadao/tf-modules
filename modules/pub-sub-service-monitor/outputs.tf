@@ -15,5 +15,5 @@ output "staleness_alert_id" {
 
 output "delivery_latency_alert_id" {
   description = "ID of the delivery latency alert policy"
-  value       = google_monitoring_alert_policy.delivery_latency.name
+  value       = var.enable_latency_alert ? google_monitoring_alert_policy.delivery_latency[0].name : null
 }

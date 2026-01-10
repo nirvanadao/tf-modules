@@ -34,6 +34,12 @@ variable "enable_dlq_alert" {
   default     = true
 }
 
+variable "enable_latency_alert" {
+  description = "Enable delivery latency alert (opt-in, lower value)"
+  type        = bool
+  default     = false
+}
+
 # --- Thresholds ---
 
 variable "ack_deadline_seconds" {

@@ -198,6 +198,7 @@ resource "google_monitoring_alert_policy" "staleness" {
 # 4. INFO: Pub/Sub Delivery Latency
 # ---------------------------------------------------------
 resource "google_monitoring_alert_policy" "delivery_latency" {
+  count        = var.enable_latency_alert ? 1 : 0
   project      = var.project_id
   display_name = "[INFO] ${var.service_name} - High Delivery Latency"
   combiner     = "OR"

@@ -15,12 +15,24 @@ resource "google_cloud_run_v2_service" "service" {
     }
 
 
-    # Dynamic VPC Access: Only configures if a connector ID is provided
+    # Dynamic VPC Access: Supports both legacy VPC connectors and modern Direct VPC Egress
     dynamic "vpc_access" {
-      for_each = var.vpc_connector_id != null ? [1] : []
+      for_each = var.vpc_connector_id != null || var.vpc_network != null || var.vpc_subnetwork != null ? [1] : []
       content {
+        # Legacy: VPC Access Connector
         connector = var.vpc_connector_id
-        egress    = "PRIVATE_RANGES_ONLY"
+
+        # Modern: Direct VPC Egress
+        dynamic "network_interfaces" {
+          for_each = var.vpc_network != null || var.vpc_subnetwork != null ? [1] : []
+          content {
+            network    = var.vpc_network
+            subnetwork = var.vpc_subnetwork
+            tags       = var.vpc_network_tags
+          }
+        }
+
+        egress = var.vpc_egress
       }
     }
 
@@ -77,6 +89,11 @@ resource "google_cloud_run_v2_service" "service" {
   }
 
   lifecycle {
+    precondition {
+      condition     = !(var.vpc_connector_id != null && (var.vpc_network != null || var.vpc_subnetwork != null))
+      error_message = "Cannot use both vpc_connector_id (legacy) and vpc_network/vpc_subnetwork (Direct VPC Egress). Choose one VPC connectivity method."
+    }
+
     ignore_changes = [
       template[0].containers[0].image,
       client,

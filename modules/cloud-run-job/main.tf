@@ -10,9 +10,24 @@ resource "google_cloud_run_v2_job" "job" {
     template {
       service_account = google_service_account.job.email
 
-      vpc_access {
-        connector = var.vpc_connector_id
-        egress    = "PRIVATE_RANGES_ONLY"
+      dynamic "vpc_access" {
+        for_each = var.vpc_connector_id != null || var.vpc_network != null || var.vpc_subnetwork != null ? [1] : []
+        content {
+          # Legacy: VPC Access Connector
+          connector = var.vpc_connector_id
+
+          # Modern: Direct VPC Egress
+          dynamic "network_interfaces" {
+            for_each = var.vpc_network != null || var.vpc_subnetwork != null ? [1] : []
+            content {
+              network    = var.vpc_network
+              subnetwork = var.vpc_subnetwork
+              tags       = var.vpc_network_tags
+            }
+          }
+
+          egress = var.vpc_egress
+        }
       }
 
       timeout     = "${var.timeout_seconds}s"
@@ -58,6 +73,11 @@ resource "google_cloud_run_v2_job" "job" {
   }
 
   lifecycle {
+    precondition {
+      condition     = !(var.vpc_connector_id != null && (var.vpc_network != null || var.vpc_subnetwork != null))
+      error_message = "Cannot use both vpc_connector_id (legacy) and vpc_network/vpc_subnetwork (Direct VPC Egress). Choose one VPC connectivity method."
+    }
+
     ignore_changes = [
       template[0].template[0].containers[0].image,
       client,

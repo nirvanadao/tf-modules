@@ -19,8 +19,37 @@ variable "initial_image" {
 }
 
 variable "vpc_connector_id" {
-  description = "VPC Access Connector ID for connecting to VPC resources"
+  description = "VPC Access Connector ID for connecting to VPC resources (legacy method)"
   type        = string
+  default     = null
+}
+
+variable "vpc_network" {
+  description = "VPC network name for Direct VPC Egress (modern approach)"
+  type        = string
+  default     = null
+}
+
+variable "vpc_subnetwork" {
+  description = "VPC subnetwork name for Direct VPC Egress (modern approach)"
+  type        = string
+  default     = null
+}
+
+variable "vpc_network_tags" {
+  description = "Network tags for VPC firewall rules (only used with Direct VPC Egress)"
+  type        = list(string)
+  default     = []
+}
+
+variable "vpc_egress" {
+  description = "VPC egress setting: ALL_TRAFFIC or PRIVATE_RANGES_ONLY"
+  type        = string
+  default     = "PRIVATE_RANGES_ONLY"
+  validation {
+    condition     = contains(["ALL_TRAFFIC", "PRIVATE_RANGES_ONLY"], var.vpc_egress)
+    error_message = "vpc_egress must be either ALL_TRAFFIC or PRIVATE_RANGES_ONLY"
+  }
 }
 
 variable "ingress" {

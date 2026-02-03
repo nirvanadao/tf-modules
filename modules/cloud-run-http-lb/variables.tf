@@ -24,3 +24,9 @@ variable "enable_cdn" {
   type        = bool
   default     = false
 }
+
+variable "existing_ip_address" {
+  description = "Existing static IP address. If provided, skip IP creation."
+  type        = string
+  default     = null
+}

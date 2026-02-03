@@ -1,5 +1,10 @@
-# Reserve static global IP address for HTTP load balancer
+locals {
+  ip_address = var.existing_ip_address != null ? var.existing_ip_address : google_compute_global_address.lb_ip[0].address
+}
+
+# Reserve static global IP address for HTTP load balancer (only if not provided)
 resource "google_compute_global_address" "lb_ip" {
+  count   = var.existing_ip_address == null ? 1 : 0
   name    = "${var.cloud_run_service_name}-http-ip"
   project = var.project_id
 }
@@ -51,6 +56,6 @@ resource "google_compute_global_forwarding_rule" "http" {
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range            = "80"
-  ip_address            = google_compute_global_address.lb_ip.address
+  ip_address            = local.ip_address
   target                = google_compute_target_http_proxy.http_proxy.id
 }
